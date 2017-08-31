@@ -217,30 +217,17 @@ namespace cg
       return ;
     }
 
-    void centralize()
-    {
-      vertex avg;
-      get_average(avg);
-      for(vertex & v : vertices)
-      {
-        v.x -= avg.x;
-        v.y -= avg.y;
-        v.z -= avg.z;
-      }
-      return ;
-    }
-
-    // > Points' coordinates range from 0 to 1
-    void normalize()
+    // > Points' coordinates range from -1 to 1
+    void normalize(double a = -1.0, double b = 1.0)
     {
       vertex max, min;
       get_extrema(max, min);
       // > Normalize
       for(vertex & v : vertices)
       {
-        v.x = (v.x - min.x) / (max.x - min.x);
-        v.y = (v.y - min.y) / (max.y - min.y);
-        v.z = (v.z - min.z) / (max.z - min.z);
+        v.x = a + (b - a) * (v.x - min.x) / (max.x - min.x);
+        v.y = a + (b - a) * (v.y - min.y) / (max.y - min.y);
+        v.z = a + (b - a) * (v.z - min.z) / (max.z - min.z);
       }
       return ;
     }

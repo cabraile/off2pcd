@@ -110,7 +110,6 @@ int main(int argc, char *argv[])
   cg::Mesh mesh(vertices, facades);
   mesh.set_redundancy(redundant);
   mesh.normalize();
-  mesh.centralize();
   mesh.to_cloud(cloud, step_size);
 
   utils::write_pcd(out_path, cloud);
