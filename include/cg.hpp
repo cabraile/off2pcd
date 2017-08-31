@@ -173,7 +173,7 @@ namespace cg
     {
       vertices = _vertices;
       facades = _facades;
-      reduntant = true;
+      redundant = true;
       return ;
     }
 
