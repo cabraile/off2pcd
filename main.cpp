@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
   double step_size = DEFAULT_STEP_SIZE;
   bool visualize = false;
   bool redundant = false;
+  bool faces_only = false;
 
   // > Flow Control
   bool error_params = false;
@@ -41,6 +42,7 @@ int main(int argc, char *argv[])
     std::cout << "'-o <OUPUT PATH>'" << std::endl;
     std::cout << "'-v' - Use this to visualize results" << std::endl;
     std::cout << "'-r' - Use this to enable point redundancy" << std::endl;
+    std::cout << "'-f' - Use this to compute only surface points" << std::endl;
     std::cout << "'-s <STEP SIZE>' (default is " <<
         DEFAULT_STEP_SIZE << ")" << std::endl;
     return -1;
@@ -65,6 +67,9 @@ int main(int argc, char *argv[])
     // > Enable visualization
     else if(!param.compare("-v"))
       visualize = true;
+    // > Sample faces only
+    else if(!param.compare("-f"))
+      faces_only = true;
     // > Set redundancy
     else if(!param.compare("-r"))
       redundant = true;
@@ -103,17 +108,18 @@ int main(int argc, char *argv[])
 
   if(utils::loadOFFFile(file_path, vertices, facades) != 0)
   {
-    std::cout << "Error loading the file." << std::endl;
+    std::cout << "Error loading the file " << file_path << "." << std::endl;
     return -1;
   }
 
   cg::Mesh mesh(vertices, facades);
   mesh.set_redundancy(redundant);
   mesh.normalize();
-  mesh.to_cloud(cloud, step_size);
-
-  utils::write_pcd(out_path, cloud);
-
+  if(faces_only)
+    mesh.sample_facades_to_cloud(cloud, step_size);
+  else
+    mesh.to_cloud(cloud, step_size);
+    
   if(visualize)
   {
     pcl::visualization::CloudViewer viewer("OFF2PCD - Original");

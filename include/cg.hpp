@@ -52,49 +52,6 @@ namespace cg
       return true;
     }
 
-    // TODO: FIX
-    // > Adapted from the ray tracing algorithm of:
-    // https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates
-    // https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/ray-triangle-intersection-geometric-solution
-    // access 30/08/2017.
-    bool belong2boundaries(
-      vertex p,
-      vertex p_A,
-      vertex p_B,
-      vertex p_C
-    )
-    {
-      linalg::Vec3D v_A(p_A.x, p_A.y, p_A.z);
-      linalg::Vec3D v_B(p_B.x, p_B.y, p_B.z);
-      linalg::Vec3D v_C(p_C.x, p_C.y, p_C.z);
-      linalg::Vec3D P(p.x, p.y, p.z);
-      double u, v, w;
-
-      linalg::Vec3D AB = v_B - v_A;
-      linalg::Vec3D AC = v_C - v_A;
-      linalg::Vec3D BC = v_C - v_B;
-
-      linalg::Vec3D PA = v_A - P;
-      linalg::Vec3D PB = v_B - P;
-      linalg::Vec3D PC = v_C - P;
-
-      double tri_abc_area = linalg::cross(AB, AC).norm();
-      double tri_cap_area = linalg::cross(PA, PC).norm();
-      double tri_abp_area = linalg::cross(PA, PB).norm();
-      double tri_bcp_area = linalg::cross(PB, PC).norm();
-
-      u = tri_cap_area/tri_abc_area;
-      v = tri_abp_area/tri_abc_area;
-      w = tri_bcp_area/tri_abc_area;
-
-      if( 0 < u && u < 1 &&
-          0 < v && v < 1 &&
-          0 < w && w < 1)
-          return true;
-
-      return false;
-    }
-
     double minimum(double x1, double x2, double x3)
     {
       double min = (x1 < x2) ? x1 : x2;
@@ -109,39 +66,39 @@ namespace cg
       return max;
     }
 
-    // > TODO: FIX
-    // > Fill the polygon with 3 vertices using the ray trace algorithm
     void fill_polygon(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud,
-      vertex v1,
-      vertex v2,
-      vertex v3,
-      double step_size
+      const vertex v1,
+      const vertex v2,
+      const vertex v3,
+      const double step_size
     )
     {
-      pcl::PointXYZ p_min;
-      pcl::PointXYZ p_max;
-      p_min.x = minimum(v1.x, v2.x, v3.x);
-      p_min.y = minimum(v1.y, v2.y, v3.y);
-      p_min.z = minimum(v1.z, v2.z, v3.z);
-      p_max.x = maximum(v1.x, v2.x, v3.x);
-      p_max.y = maximum(v1.y, v2.y, v3.y);
-      p_max.z = maximum(v1.z, v2.z, v3.z);
+      std::vector<pcl::PointXYZ> edge_points;
 
-      for(double x = p_min.x + step_size; x < p_max.x; x+= step_size)
+      vertex a = v1;
+      vertex b = v2;
+      vertex c = v3;
+
+      // > Step 1 : compute the line points between a and b
+      for(double t = step_size; t < 1; t += step_size)
       {
-        for(double y = p_min.x + step_size; y < p_max.y; y+= step_size)
+        pcl::PointXYZ p;
+        p.x = b.x + (a.x - b.x) * t;
+        p.y = b.y + (a.y - b.y) * t;
+        p.z = b.z + (a.z - b.z) * t;
+        edge_points.push_back(p);
+      }
+
+      // > Step 2 : compute the line points between each edge point and c
+      for(pcl::PointXYZ p : edge_points)
+      {
+        for(double t = step_size; t < 1; t += step_size)
         {
-          for(double z = p_min.z + step_size; z < p_max.z; z+= step_size)
-          {
-            vertex v;
-            v.x = x; v.y = y; v.z = z;
-            if(belong2boundaries(v, v1, v2, v3))
-            {
-              pcl::PointXYZ p;
-              p.x = x; p.y = y; p.z = z;
-              add2PC(cloud, p);
-            }
-          }
+          pcl::PointXYZ q;
+          q.x = c.x + (p.x - c.x) * t;
+          q.y = c.y + (p.y - c.y) * t;
+          q.z = c.z + (p.z - c.z) * t;
+          add2PC(cloud, q);
         }
       }
 
@@ -149,9 +106,9 @@ namespace cg
     }
 
     void fill_lines(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud,
-      vertex v1,
-      vertex v2,
-      double step_size
+      const vertex v1,
+      const vertex v2,
+      const double step_size
     )
     {
       for(double t = step_size; t < 1; t += step_size)
@@ -253,11 +210,41 @@ namespace cg
         fill_lines(cloud, vertices[f.v1], vertices[f.v2], step_size);
         fill_lines(cloud, vertices[f.v1], vertices[f.v3], step_size);
         fill_lines(cloud, vertices[f.v2], vertices[f.v3], step_size);
-        //fill_polygon(cloud, vertices[f.v1], vertices[f.v2],
-        //    vertices[f.v3], step_size);
+        fill_polygon(cloud, vertices[f.v1], vertices[f.v2],
+            vertices[f.v3], step_size);
       }
 
       return ;
+    }
+
+    void add_vertices_to_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud)
+    {
+      for(vertex v : vertices)
+      {
+        pcl::PointXYZ p;
+        p.x = v.x; p.y = v.y; p.z = v.z;
+        add2PC(cloud, p);
+      }
+      return ;
+    }
+
+    void add_lines_to_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud,
+      double step_size=0.1)
+    {
+      for(facade f : facades)
+      {
+        fill_lines(cloud, vertices[f.v1], vertices[f.v2], step_size);
+        fill_lines(cloud, vertices[f.v1], vertices[f.v3], step_size);
+        fill_lines(cloud, vertices[f.v2], vertices[f.v3], step_size);
+      }
+      return ;
+    }
+    void sample_facades_to_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud,
+      double step_size=0.1)
+    {
+      for(facade f : facades)
+        fill_polygon(cloud, vertices[f.v1], vertices[f.v2],
+            vertices[f.v3], step_size);
     }
 
   };
