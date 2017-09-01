@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
   if(utils::loadOFFFile(file_path, vertices, facades) != 0)
   {
-    std::cout << "Error loading the file " << file_path << "." << std::endl;
+    std::cout << "Error loading the file " << file_path << " ." << std::endl;
     return -1;
   }
 
@@ -119,7 +119,9 @@ int main(int argc, char *argv[])
     mesh.sample_facades_to_cloud(cloud, step_size);
   else
     mesh.to_cloud(cloud, step_size);
-    
+
+  utils::write_pcd(out_path, cloud);
+
   if(visualize)
   {
     pcl::visualization::CloudViewer viewer("OFF2PCD - Original");
