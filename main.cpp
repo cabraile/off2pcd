@@ -6,11 +6,11 @@
 #include <pcl/common/common.h>
 #include <pcl/common/io.h>
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/filters/voxel_grid.h>
 
 #include "include/offparser.hpp"
 #include "include/cg.hpp"
 #include "include/writter.hpp"
-
 #define DEFAULT_STEP_SIZE 0.1
 
 typedef pcl::PointXYZ PointT;
@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 {
   // > Variables
   CloudT::Ptr cloud(new CloudT);
+  CloudT::Ptr cloud_filtered(new CloudT);
   std::vector<cg::vertex> vertices;
   std::vector<cg::facade> facades;
 
@@ -120,13 +121,21 @@ int main(int argc, char *argv[])
   else
     mesh.to_cloud(cloud, step_size);
 
-  utils::write_pcd(out_path, cloud);
+  std::cout << "> Original size: " << cloud->size() << std::endl;
+
+  pcl::VoxelGrid<pcl::PointXYZ> sor;
+  sor.setInputCloud (cloud);
+  sor.setLeafSize (step_size, step_size, step_size);
+  sor.filter (*cloud_filtered);
+
+  std::cout << "> Final size: " << cloud_filtered->size() << std::endl;
+
+  utils::write_pcd(out_path, cloud_filtered);
 
   if(visualize)
   {
     pcl::visualization::CloudViewer viewer("OFF2PCD - Original");
-    viewer.showCloud (cloud);
-
+    viewer.showCloud(cloud_filtered);
     while (!viewer.wasStopped ()){}
   }
 
