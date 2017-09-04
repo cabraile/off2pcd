@@ -6,6 +6,7 @@
 #include <pcl/common/common.h>
 #include <pcl/common/io.h>
 #include <pcl/visualization/cloud_viewer.h>
+#include <pcl/filters/voxel_grid.h>
 
 #include "include/offparser.hpp"
 #include "include/cg.hpp"
@@ -20,6 +21,7 @@ int main(int argc, char *argv[])
 {
   // > Variables
   CloudT::Ptr cloud(new CloudT);
+  CloudT::Ptr cloud_filtered(new CloudT);
   std::vector<cg::vertex> vertices;
   std::vector<cg::facade> facades;
 
@@ -113,21 +115,38 @@ int main(int argc, char *argv[])
   }
 
   cg::Mesh mesh(vertices, facades);
-  mesh.set_redundancy(redundant);
   mesh.normalize();
   if(faces_only)
     mesh.sample_facades_to_cloud(cloud, step_size);
   else
     mesh.to_cloud(cloud, step_size);
 
-  utils::write_pcd(out_path, cloud);
+  std::cout << "Input cloud size: " << cloud->size() << std::endl;
+  if(!redundant)
+  {
+    pcl::VoxelGrid<pcl::PointXYZ> sor;
+    sor.setInputCloud(cloud);
+    sor.setLeafSize (step_size, step_size, step_size);
+    sor.filter (*cloud_filtered);
+
+    std::cout << "Filtered cloud size: " << cloud_filtered->size() << std::endl;
+  }
+  else
+    cloud_filtered = cloud;
+
+  utils::write_pcd(out_path, cloud_filtered);
 
   if(visualize)
   {
-    pcl::visualization::CloudViewer viewer("OFF2PCD - Original");
+    pcl::visualization::CloudViewer viewer("OFF2PCD - Original Cloud");
     viewer.showCloud (cloud);
 
     while (!viewer.wasStopped ()){}
+
+    pcl::visualization::CloudViewer viewer_filtered("OFF2PCD - Filtered Cloud");
+    viewer_filtered.showCloud (cloud_filtered);
+
+    while (!viewer_filtered.wasStopped ()){}
   }
 
   return 0;

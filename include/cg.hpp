@@ -30,27 +30,7 @@ namespace cg
     std::vector<facade> facades;
     vertex max;
     vertex min;
-    bool redundant;
 
-    // Adds points in the pointcloud without redundancy, if not reduntant cloud.
-    // Returns whether the point was added or not
-    // It is not added if a point already exists at that position
-    bool add2PC(
-      pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud,
-      pcl::PointXYZ p
-    )
-    {
-      if(!redundant)
-      {
-        for(pcl::PointXYZ q : cloud->points)
-        {
-          if(p.x == q.x && p.y == q.y && p.z == q.z)
-            return false;
-        }
-      }
-      cloud->points.push_back(p);
-      return true;
-    }
 
     double minimum(double x1, double x2, double x3)
     {
@@ -98,7 +78,7 @@ namespace cg
           q.x = c.x + (p.x - c.x) * t;
           q.y = c.y + (p.y - c.y) * t;
           q.z = c.z + (p.z - c.z) * t;
-          add2PC(cloud, q);
+          cloud->points.push_back(q);
         }
       }
 
@@ -117,7 +97,7 @@ namespace cg
         p.x = v2.x + (v1.x - v2.x) * t;
         p.y = v2.y + (v1.y - v2.y) * t;
         p.z = v2.z + (v1.z - v2.z) * t;
-        add2PC(cloud, p);
+        cloud->points.push_back(p);
       }
       return ;
     }
@@ -130,11 +110,8 @@ namespace cg
     {
       vertices = _vertices;
       facades = _facades;
-      redundant = true;
       return ;
     }
-
-    void set_redundancy(bool value) { redundant = value; }
 
     void get_extrema(
       vertex &max,
@@ -201,7 +178,7 @@ namespace cg
       {
         pcl::PointXYZ p;
         p.x = v.x; p.y = v.y; p.z = v.z;
-        add2PC(cloud, p);
+        cloud->points.push_back(p);
       }
 
       // > Computes points from the edges for each face
@@ -223,7 +200,7 @@ namespace cg
       {
         pcl::PointXYZ p;
         p.x = v.x; p.y = v.y; p.z = v.z;
-        add2PC(cloud, p);
+        cloud->points.push_back(p);
       }
       return ;
     }
