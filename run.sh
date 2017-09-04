@@ -6,7 +6,11 @@
 # > Absolute or relative path to the input file
 FILE_PATH="path/to/file.off"
 # > Absolute or relative path to the output file
+<<<<<<< HEAD
 OUTPUT_PATH="path/to/output.pcd"
+=======
+OUTPUT_PATH=".build/file.pcd"
+>>>>>>> 11f79d51bf65c3cc1690bb4774385fff27f1997d
 # > The step size for the rastering algorithm (between 0 and 1)
 STEP_SIZE="0.1"
 # > Enable visualization. Comment the line to disable visualization.

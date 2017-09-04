@@ -11,7 +11,6 @@
 #include "include/offparser.hpp"
 #include "include/cg.hpp"
 #include "include/writter.hpp"
-
 #define DEFAULT_STEP_SIZE 0.1
 
 typedef pcl::PointXYZ PointT;
@@ -121,6 +120,7 @@ int main(int argc, char *argv[])
   else
     mesh.to_cloud(cloud, step_size);
 
+<<<<<<< HEAD
   std::cout << "Input cloud size: " << cloud->size() << std::endl;
   if(!redundant)
   {
@@ -133,14 +133,29 @@ int main(int argc, char *argv[])
   }
   else
     cloud_filtered = cloud;
+=======
+  std::cout << "> Original size: " << cloud->size() << std::endl;
+
+  pcl::VoxelGrid<pcl::PointXYZ> sor;
+  sor.setInputCloud (cloud);
+  sor.setLeafSize (step_size, step_size, step_size);
+  sor.filter (*cloud_filtered);
+
+  std::cout << "> Final size: " << cloud_filtered->size() << std::endl;
+>>>>>>> 11f79d51bf65c3cc1690bb4774385fff27f1997d
 
   utils::write_pcd(out_path, cloud_filtered);
 
   if(visualize)
   {
+<<<<<<< HEAD
     pcl::visualization::CloudViewer viewer("OFF2PCD - Original Cloud");
     viewer.showCloud (cloud);
 
+=======
+    pcl::visualization::CloudViewer viewer("OFF2PCD - Original");
+    viewer.showCloud(cloud_filtered);
+>>>>>>> 11f79d51bf65c3cc1690bb4774385fff27f1997d
     while (!viewer.wasStopped ()){}
 
     pcl::visualization::CloudViewer viewer_filtered("OFF2PCD - Filtered Cloud");
