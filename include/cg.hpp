@@ -23,6 +23,22 @@ namespace cg
     int v3;
   };
 
+  double get_max(vertex v)
+  {
+    double val = v.x;
+    val = (val < v.y) ? v.y : val ;
+    val = (val < v.z) ? v.z : val ;
+    return val;
+  }
+
+  double get_min(vertex v)
+  {
+    double val = v.x;
+    val = (val > v.y) ? v.y : val;
+    val = (val > v.z) ? v.z : val;
+    return val;
+  }
+
   class Mesh
   {
   private:
@@ -154,14 +170,38 @@ namespace cg
     // > Points' coordinates range from -1 to 1
     void normalize(double a = -1.0, double b = 1.0)
     {
-      vertex max, min;
-      get_extrema(max, min);
+      vertex v_max, v_min, v_prop_max, v_prop_min;
+      double max, min;
+
+      get_extrema(v_max, v_min);
+      max = get_max(v_max);
+      min = get_min(v_min);
+
+      v_prop_max.x = v_max.x / max;
+      v_prop_max.y = v_max.y / max;
+      v_prop_max.z = v_max.z / max;
+
+      v_prop_min.x = v_min.x / min;
+      v_prop_min.y = v_min.y / min;
+      v_prop_min.z = v_min.z / min;
+
+      std::cout << max << std::endl;
+      std::cout << min << std::endl;
+
+      double a_x = v_prop_min.x * a;
+      double a_y = v_prop_min.y * a;
+      double a_z = v_prop_min.z * a;
+
+      double b_x = v_prop_max.x * b;
+      double b_y = v_prop_max.y * b;
+      double b_z = v_prop_max.z * b;
+
       // > Normalize
       for(vertex & v : vertices)
       {
-        v.x = a + (b - a) * (v.x - min.x) / (max.x - min.x);
-        v.y = a + (b - a) * (v.y - min.y) / (max.y - min.y);
-        v.z = a + (b - a) * (v.z - min.z) / (max.z - min.z);
+        v.x = a_x + (b_x - a_x) * (v.x - v_min.x) / ( v_max.x - v_min.x );
+        v.y = a_y + (b_y - a_y) * (v.y - v_min.y) / ( v_max.y - v_min.y );
+        v.z = a_z + (b_z - a_z) * (v.z - v_min.z) / ( v_max.z - v_min.z );
       }
       return ;
     }
