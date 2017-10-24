@@ -177,31 +177,12 @@ namespace cg
       max = get_max(v_max);
       min = get_min(v_min);
 
-      v_prop_max.x = v_max.x / max;
-      v_prop_max.y = v_max.y / max;
-      v_prop_max.z = v_max.z / max;
-
-      v_prop_min.x = v_min.x / min;
-      v_prop_min.y = v_min.y / min;
-      v_prop_min.z = v_min.z / min;
-
-      std::cout << max << std::endl;
-      std::cout << min << std::endl;
-
-      double a_x = v_prop_min.x * a;
-      double a_y = v_prop_min.y * a;
-      double a_z = v_prop_min.z * a;
-
-      double b_x = v_prop_max.x * b;
-      double b_y = v_prop_max.y * b;
-      double b_z = v_prop_max.z * b;
-
       // > Normalize
       for(vertex & v : vertices)
       {
-        v.x = a_x + (b_x - a_x) * (v.x - v_min.x) / ( v_max.x - v_min.x );
-        v.y = a_y + (b_y - a_y) * (v.y - v_min.y) / ( v_max.y - v_min.y );
-        v.z = a_z + (b_z - a_z) * (v.z - v_min.z) / ( v_max.z - v_min.z );
+        v.x = a + (b - a) * (v.x - min) / (max - min);
+        v.y = a + (b - a) * (v.y - min) / (max - min);
+        v.z = a + (b - a) * (v.z - min) / (max - min);
       }
       return ;
     }
@@ -220,7 +201,7 @@ namespace cg
         p.x = v.x; p.y = v.y; p.z = v.z;
         cloud->points.push_back(p);
       }
-
+      ///*
       // > Computes points from the edges for each face
       for(facade f : facades)
       {
@@ -230,7 +211,7 @@ namespace cg
         fill_polygon(cloud, vertices[f.v1], vertices[f.v2],
             vertices[f.v3], step_size);
       }
-
+      //*/
       return ;
     }
 
@@ -256,6 +237,7 @@ namespace cg
       }
       return ;
     }
+
     void sample_facades_to_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud,
       double step_size=0.1)
     {
