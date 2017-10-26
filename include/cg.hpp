@@ -170,19 +170,23 @@ namespace cg
     // > Points' coordinates range from -1 to 1
     void normalize(double a = -1.0, double b = 1.0)
     {
-      vertex v_max, v_min, v_prop_max, v_prop_min;
+      vertex v_max, v_min;
       double max, min;
 
       get_extrema(v_max, v_min);
-      max = get_max(v_max);
-      min = get_min(v_min);
+      min = std::abs(get_min(v_min));
+      max = std::abs(get_max(v_max));
+      max = (min > max) ? min : max;
 
       // > Normalize
       for(vertex & v : vertices)
       {
-        v.x = a + (b - a) * (v.x - min) / (max - min);
-        v.y = a + (b - a) * (v.y - min) / (max - min);
-        v.z = a + (b - a) * (v.z - min) / (max - min);
+        v.x = v.x / max;
+        v.y = v.y / max;
+        v.z = v.z / max;
+        //v.x = a + (b - a) * (v.x - min) / (max - min);
+        //v.y = a + (b - a) * (v.y - min) / (max - min);
+        //v.z = a + (b - a) * (v.z - min) / (max - min);
       }
       return ;
     }

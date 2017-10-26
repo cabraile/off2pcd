@@ -16,5 +16,3 @@
   * **OUTPUT_PATH**: Absolute or relative path to the output file
   * **STEP_SIZE**: The step size for the line filling algorithm (between 0 and 1)
   * **VISUALIZE**: Enable visualization. Comment the line to disable visualization.
-  * **REDUNDANCY**: Enable points redundancy. Leave line commented to disable redundancy.
-  * **FACES_ONLY**: Sample surface points only (don't add vertices and edges points). Comment the line to add all points.

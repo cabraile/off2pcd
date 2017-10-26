@@ -1,4 +1,5 @@
 #include <iostream>
+#include <exception>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
@@ -11,10 +12,59 @@
 #include "include/offparser.hpp"
 #include "include/cg.hpp"
 #include "include/writter.hpp"
+
 #define DEFAULT_STEP_SIZE 0.1
 
 typedef pcl::PointXYZ PointT;
 typedef pcl::PointCloud<PointT> CloudT;
+
+
+double minimum(double x1, double x2, double x3)
+{
+  double min = (x1 < x2) ? x1 : x2;
+  min = (min < x3) ? min : x3;
+  return min;
+}
+
+double maximum(double x1, double x2, double x3)
+{
+  double max = (x1 > x2) ? x1 : x2;
+  max = (max > x3) ? max : x3;
+  return max;
+}
+
+void transposeToMassCenter( CloudT::Ptr & cloud )
+{
+  pcl::PointXYZ centroid;
+  pcl::PointCloud<pcl::PointXYZ>::Ptr out_cloud(
+        new  pcl::PointCloud<pcl::PointXYZ>);
+  pcl::computeCentroid<pcl::PointXYZ, pcl::PointXYZ>(*cloud, centroid);
+
+  for(pcl::PointXYZ & p : cloud->points)
+  {
+    p.x = p.x - centroid.x;
+    p.y = p.y - centroid.y;
+    p.z = p.z - centroid.z;
+  }
+  return ;
+}
+
+void normalizePointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr & cloud)
+{
+  pcl::PointXYZ p_max;
+  pcl::PointXYZ p_min;
+  pcl::getMinMax3D(*cloud, p_min, p_max);
+  double max = std::abs(maximum(p_max.x, p_max.y, p_max.z));
+  double min = std::abs(minimum(p_min.x, p_min.y, p_min.z));
+  max = (min > max) ? min : max;
+  for(pcl::PointXYZ & p : cloud->points)
+  {
+    p.x = p.x/max;
+    p.y = p.y/max;
+    p.z = p.z/max;
+  }
+  return ;
+}
 
 int main(int argc, char *argv[])
 {
@@ -29,8 +79,6 @@ int main(int argc, char *argv[])
   std::string out_path = "";
   double step_size = DEFAULT_STEP_SIZE;
   bool visualize = false;
-  bool redundant = false;
-  bool faces_only = false;
 
   // > Flow Control
   bool error_params = false;
@@ -42,8 +90,6 @@ int main(int argc, char *argv[])
     std::cout << "'-p <FILE PATH>'" << std::endl;
     std::cout << "'-o <OUPUT PATH>'" << std::endl;
     std::cout << "'-v' - Use this to visualize results" << std::endl;
-    std::cout << "'-r' - Use this to enable point redundancy" << std::endl;
-    std::cout << "'-f' - Use this to compute only surface points" << std::endl;
     std::cout << "'-s <STEP SIZE>' (default is " <<
         DEFAULT_STEP_SIZE << ")" << std::endl;
     return -1;
@@ -68,12 +114,6 @@ int main(int argc, char *argv[])
     // > Enable visualization
     else if(!param.compare("-v"))
       visualize = true;
-    // > Sample faces only
-    else if(!param.compare("-f"))
-      faces_only = true;
-    // > Set redundancy
-    else if(!param.compare("-r"))
-      redundant = true;
     else
     {
       std::cout << "=> Warning: argument " << param <<
@@ -112,40 +152,45 @@ int main(int argc, char *argv[])
     std::cout << "Error loading the file " << file_path << " ." << std::endl;
     return -1;
   }
-
-  cg::Mesh mesh(vertices, facades);
-  mesh.normalize();
-  if(faces_only)
-    mesh.sample_facades_to_cloud(cloud, step_size);
-  else
+  try
+  {
+    cg::Mesh mesh(vertices, facades);
+    mesh.normalize();
     mesh.to_cloud(cloud, step_size);
 
-  std::cout << "Input cloud size: " << cloud->size() << std::endl;
-  if(!redundant)
-  {
+    std::cout << "Input cloud size: " << cloud->size() << std::endl;
+
     pcl::VoxelGrid<pcl::PointXYZ> sor;
     sor.setInputCloud(cloud);
     sor.setLeafSize (step_size, step_size, step_size);
     sor.filter (*cloud_filtered);
 
     std::cout << "Filtered cloud size: " << cloud_filtered->size() << std::endl;
+
+    transposeToMassCenter(cloud_filtered);
+    // > When the cloud is centered to the origin, it is needed to normalize
+    // again because coordinates may not be between -1 and 1 anymore.
+    normalizePointCloud(cloud_filtered);
+
+
+    utils::write_pcd(out_path, cloud_filtered);
+
+    if(visualize)
+    {
+      pcl::visualization::CloudViewer viewer("OFF2PCD - Original Cloud");
+      viewer.showCloud (cloud);
+
+      while (!viewer.wasStopped ()){}
+
+      pcl::visualization::CloudViewer viewer_filtered("OFF2PCD - Filtered Cloud");
+      viewer_filtered.showCloud (cloud_filtered);
+
+      while (!viewer_filtered.wasStopped ()){}
+    }
   }
-  else
-    cloud_filtered = cloud;
-
-  utils::write_pcd(out_path, cloud_filtered);
-
-  if(visualize)
+  catch(const std::exception& e)
   {
-    pcl::visualization::CloudViewer viewer("OFF2PCD - Original Cloud");
-    viewer.showCloud (cloud);
-
-    while (!viewer.wasStopped ()){}
-
-    pcl::visualization::CloudViewer viewer_filtered("OFF2PCD - Filtered Cloud");
-    viewer_filtered.showCloud (cloud_filtered);
-
-    while (!viewer_filtered.wasStopped ()){}
+    std::cout << e.what() << std::endl;
   }
 
   return 0;
